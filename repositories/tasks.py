@@ -97,22 +97,22 @@ class TaskRepository(BaseRepository):
                         if user_tasks_quantity["count"] <= least_loaded_user["task_count"] + 2:
                             return user["id"]
             else:
-                return least_loaded_user
+                return least_loaded_user["assignee_id"]
 
     async def get_important_tasks(self) -> List:
         query = text('SELECT * FROM tasks WHERE assignee_id IS NULL '
                      'AND completed = FALSE '
-                     'AND parent_task_id IS NOT NULL;')
+                     'AND parent_task_id IS NOT NULL '
+                     'OR parent_task_id IS NULL;')
         return await self.database.fetch_all(query)
 
     async def get_potential_assignments(self) -> List:
         list_of_assignments = []
         task_list = await self.get_important_tasks()
-        least_loaded_user = await self.get_least_loaded_user_by_tasks()
-
-        logger.debug(
-            f"least_loaded_user result: assignee id = {least_loaded_user[0]}, task_count = {least_loaded_user[1]}")
-        logger.debug(f"task_list result: {task_list}")
+        # least_loaded_user = await self.get_least_loaded_user_by_tasks()
+        #
+        # logger.debug(
+        #     f"least_loaded_user result: assignee id = {least_loaded_user[0]}, task_count = {least_loaded_user[1]}")
         for task in task_list:
             potential_user = await self.get_potential_user_by_task(task["id"])
 
