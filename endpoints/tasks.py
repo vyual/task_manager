@@ -40,4 +40,4 @@ async def delete_task(task_id: int, task_repository: TaskRepository = Depends(ge
 
 @router.get("/important_tasks", status_code=status.HTTP_200_OK)
 async def read_important_tasks(task_repository: TaskRepository = Depends(get_task_repository)):
-    return await task_repository.get_important_tasks()
+    return await task_repository.get_potential_assignments()
