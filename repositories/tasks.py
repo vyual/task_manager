@@ -2,13 +2,11 @@ from datetime import datetime
 from typing import List, Optional
 
 from loguru import logger
+from sqlalchemy import text
+
 from db.tasks import tasks_model
-from db.users import users_model
 from models.task import Task, TaskIn
-from models.user import User
 from repositories.base import BaseRepository
-from pytz import timezone
-from sqlalchemy import select, func
 
 
 class TaskRepository(BaseRepository):
@@ -18,7 +16,7 @@ class TaskRepository(BaseRepository):
         return await self.database.fetch_all(query)
 
     async def get_by_id(self, task_id: int) -> Optional[Task]:
-        query = tasks_model.select().where(tasks_model.c.id == task_id).first()
+        query = tasks_model.select().where(tasks_model.c.id == task_id).limit(1)
         task = await self.database.fetch_one(query)
         if task is None:
             return None
@@ -65,42 +63,66 @@ class TaskRepository(BaseRepository):
         return await self.database.fetch_all(query)
 
     async def get_least_loaded_user_by_tasks(self):
-        subquery = select([tasks_model.c.assignee_id, func.count().label('task_count')]).where(
-            tasks_model.c.completed is False). \
-            group_by(tasks_model.c.assignee_id).subquery()
-        query = select([subquery.c.assignee_id]).order_by(subquery.c.task_count).limit(1)
+        query = text(f"SELECT tasks.assignee_id, COUNT(tasks.id) as task_count "
+                     f"FROM tasks "
+                     f"WHERE tasks.completed = false AND tasks.assignee_id IS NOT NULL "
+                     f"GROUP BY tasks.assignee_id "
+                     f"ORDER BY task_count ASC "
+                     f"LIMIT 1;")
+
         result = await self.database.fetch_one(query)
         if result is not None:
-            return result[0]
+            """
+            assignee_id, 
+            task_count
+            """
+            return result
 
     async def get_potential_user_by_task(self, task_id: int):
-        query = tasks_model.select().where(tasks_model.c.id == task_id)
+        query = text(f'SELECT * FROM tasks WHERE id = {task_id};')
         task = await self.database.fetch_one(query)
         least_loaded_user = await self.get_least_loaded_user_by_tasks()
+
         if task is not None:
             if task["parent_task_id"] is not None:
                 parent_task = await self.get_by_id(task["parent_task_id"])
                 if parent_task is not None:
-                    return parent_task.assignee_id
+                    query = text(f'SELECT * FROM users WHERE id = {parent_task.assignee_id}')
+                    user = await self.database.fetch_one(query)
+                    if user is not None:
+                        user_tasks_quantity_query = text(
+                            f"SELECT COUNT(*) FROM tasks WHERE assignee_id = {user.id}")
+                        user_tasks_quantity = await self.database.fetch_one(user_tasks_quantity_query)
+
+                        if user_tasks_quantity["count"] <= least_loaded_user["task_count"] + 2:
+                            return user["id"]
             else:
                 return least_loaded_user
 
     async def get_important_tasks(self) -> List:
-        query = tasks_model.select().where(tasks_model.c.assignee_id is None,
-                                           tasks_model.c.completed is False,
-                                           tasks_model.c.parent_task_id is not None)
+        query = text('SELECT * FROM tasks WHERE assignee_id IS NULL '
+                     'AND completed = FALSE '
+                     'AND parent_task_id IS NOT NULL;')
         return await self.database.fetch_all(query)
 
     async def get_potential_assignments(self) -> List:
         list_of_assignments = []
         task_list = await self.get_important_tasks()
+        least_loaded_user = await self.get_least_loaded_user_by_tasks()
+
+        logger.debug(
+            f"least_loaded_user result: assignee id = {least_loaded_user[0]}, task_count = {least_loaded_user[1]}")
+        logger.debug(f"task_list result: {task_list}")
         for task in task_list:
-            potential_user = await self.get_potential_user_by_task(task.c.id)
-            query = users_model.select().where(users_model.c.id == potential_user).first()
+            potential_user = await self.get_potential_user_by_task(task["id"])
+
+            logger.debug(f"task_list result: {task_list}")
+            logger.debug(f"potential_user result: assignee id = {potential_user}")
+            query = text(f'SELECT * FROM users WHERE id = {potential_user};')
             user = await self.database.fetch_one(query)
-            user = User.parse_obj(user)
-            new_assignment = {"Важная задача": task.c.name, "ФИО": user.name,
-                              "Срок": task.c.deadline.strftime("%d.%m.%Y %H:%M")}
+            logger.debug(f"user result: {user}")
+            new_assignment = {"Важная задача": task.name, "ФИО": user.name,
+                              "Срок": task.deadline.strftime("%d.%m.%Y %H:%M")}
             list_of_assignments.append(new_assignment)
 
         return list_of_assignments

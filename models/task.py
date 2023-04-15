@@ -7,7 +7,7 @@ class Task(BaseModel):
     id: Optional[int] = None
     name: str
     parent_task_id: Optional[int] = None
-    assignee_id: int
+    assignee_id: Optional[int] = None
     deadline: datetime
     created_at: datetime
     updated_at: datetime
@@ -16,7 +16,7 @@ class Task(BaseModel):
 class TaskIn(BaseModel):
     name: constr(min_length=8, max_length=32)  # type: ignore
     parent_task_id: Optional[int] = None
-    assignee_id: int
+    assignee_id: Optional[int] = None
     deadline: datetime
 
     class Config:
