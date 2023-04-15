@@ -108,6 +108,7 @@ class TaskRepository(BaseRepository):
 
     async def get_potential_assignments(self) -> List:
         list_of_assignments = []
+        list_of_potential_users = []
         task_list = await self.get_important_tasks()
         # least_loaded_user = await self.get_least_loaded_user_by_tasks()
         #
