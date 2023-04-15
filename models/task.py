@@ -14,10 +14,11 @@ class Task(BaseModel):
 
 
 class TaskIn(BaseModel):
-    name: constr(min_length=8, max_length=32) # type: ignore
+    name: constr(min_length=8, max_length=32)  # type: ignore
     parent_task_id: Optional[int] = None
     assignee_id: int
     deadline: datetime
+
     class Config:
         schema_extra = {
             "example": {

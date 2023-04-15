@@ -12,5 +12,5 @@ class User(BaseModel):
 
 
 class UserIn(BaseModel):
-    name: constr(min_length=8, max_length=32) # type: ignore
-    job_title: constr(min_length=1, max_length=32) # type: ignore
+    name: constr(min_length=8, max_length=32)
+    job_title: constr(min_length=1, max_length=32)

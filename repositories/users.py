@@ -1,12 +1,12 @@
 from datetime import datetime
 from typing import List, Optional
 
-import sqlalchemy
-from db.users import users_model
+from loguru import logger
+
 from db.tasks import tasks_model
+from db.users import users_model
 from models.user import User, UserIn
 from repositories.base import BaseRepository
-from loguru import logger
 
 
 class UserRepository(BaseRepository):
@@ -14,7 +14,6 @@ class UserRepository(BaseRepository):
     async def get_all(self, limit: int = 100, offset: int = 0) -> List:
         query = users_model.select().limit(limit).offset(offset)
         return await self.database.fetch_all(query)
-    
 
     async def get_by_id(self, user_id: int) -> Optional[User]:
         query = users_model.select().where(users_model.c.id == user_id).first()
@@ -22,7 +21,7 @@ class UserRepository(BaseRepository):
         if user is None:
             return None
         return User.parse_obj(user)
-    
+
     # todo сделать один query
     async def get_busy_users(self, user_id: int, limit: int = 100, offset: int = 0) -> List:
         query = users_model.select()
@@ -39,46 +38,41 @@ class UserRepository(BaseRepository):
             for task in tasks:
                 if not task["completed"]:
                     user_data[user["name"]][task["id"]] = task["name"]
-                    task_quantity+=1
-            
+                    task_quantity += 1
+
             user_data[str(user["name"])]["task_quantity"] = task_quantity
-            task_quantity = 0
             users_data.append(user_data)
         result = sorted(users_data, key=lambda x: list(x.values())[0]['task_quantity'], reverse=True)
         return result
 
-    
     async def create(self, u: UserIn) -> User:
-        user = User(name=u.name, 
-                    job_title=u.job_title, 
+        user = User(name=u.name,
+                    job_title=u.job_title,
                     created_at=datetime.utcnow(),
                     updated_at=datetime.utcnow())
-        
+
         values = {**user.dict()}
         values.pop("id", None)
-        
+
         query = users_model.insert().values(**values)
         user.id = await self.database.execute(query)
         return user
-    
 
     async def update(self, id: int, u: UserIn) -> User:
         user = User(id=id,
-                    name=u.name, 
-                    job_title=u.job_title, 
+                    name=u.name,
+                    job_title=u.job_title,
                     created_at=datetime.utcnow(),
                     updated_at=datetime.utcnow())
-        
+
         values = {**user.dict()}
         values.pop("id", None)
         values.pop("created_at", None)
-        
-        query = users_model.update().where(users_model.c.id==id).values(**values)
+
+        query = users_model.update().where(users_model.c.id == id).values(**values)
         user.id = await self.database.execute(query)
         return user
-
 
     async def delete(self, id: int):
         query = users_model.delete().where(users_model.c.id == id)
         await self.database.execute(query)
-    
