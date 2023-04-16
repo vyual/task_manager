@@ -1,4 +1,14 @@
-# Инструкция по запуску
+# Important: есть возможность запустить с помощью Docker:
+
+## 1. Укажите вышеперечисленные параметры в .env
+
+## 2. Запустите Docker Image
+
+`docker compose build`
+
+`docker compose up -d`
+
+# Инструкция по запуску без Docker
 ## 1. Склонируйте репозиторий
 
 `git clone https://github.com/vyual/task_manager`
@@ -23,8 +33,4 @@ POSTGRES_USER (имя пользователя),
 
 POSTGRES_PASSWORD (пароль пользователя)
 
-# Important: есть возможность запустить базу с помощью Docker:
 
-`docker compose build`
-
-`docker compose up -d`
