@@ -22,6 +22,3 @@ POSTGRES_DB (название бд),
 POSTGRES_USER (имя пользователя),
 
 POSTGRES_PASSWORD (пароль пользователя)
-
-
-
