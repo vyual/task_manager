@@ -110,10 +110,6 @@ class TaskRepository(BaseRepository):
         list_of_assignments = []
         list_of_potential_users = []
         task_list = await self.get_important_tasks()
-        # least_loaded_user = await self.get_least_loaded_user_by_tasks()
-        #
-        # logger.debug(
-        #     f"least_loaded_user result: assignee id = {least_loaded_user[0]}, task_count = {least_loaded_user[1]}")
         for task in task_list:
             potential_user = await self.get_potential_user_by_task(task["id"])
 
