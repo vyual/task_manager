@@ -78,7 +78,7 @@ class TaskRepository(BaseRepository):
             """
             return result
 
-    async def get_potential_user_by_task(self, task_id: int):
+    async def get_potential_user_by_task(self, task_id: int) -> int:
         query = text(f'SELECT * FROM tasks WHERE id = {task_id};')
         task = await self.database.fetch_one(query)
         least_loaded_user = await self.get_least_loaded_user_by_tasks()
@@ -108,7 +108,6 @@ class TaskRepository(BaseRepository):
 
     async def get_potential_assignments(self) -> List:
         list_of_assignments = []
-        list_of_potential_users = []
         task_list = await self.get_important_tasks()
         for task in task_list:
             potential_user = await self.get_potential_user_by_task(task["id"])
