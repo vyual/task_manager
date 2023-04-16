@@ -22,3 +22,9 @@ POSTGRES_DB (название бд),
 POSTGRES_USER (имя пользователя),
 
 POSTGRES_PASSWORD (пароль пользователя)
+
+# Important: есть возможность запустить базу с помощью Docker:
+
+`docker compose build`
+
+`docker compose up -d`
